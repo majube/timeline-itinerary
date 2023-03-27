@@ -50,6 +50,16 @@ def init_argparse():
         type=float,
         help="Error distance (in km) to add to locations",
     )
+    parser.add_argument(
+        "-o",
+        "--output",
+        action="store",
+        default="itin.json",
+        dest="OUTPUT",
+        metavar="outputfile.json",
+        required=False,
+        help="Output file (preprocessed JSON)",
+    )
 
     return parser
 
@@ -90,16 +100,19 @@ def parse_ts(ts):
     return datetime.strptime(ts.split("T")[0], "%Y-%m-%d")
 
 
-def main(takeoutzip, startdate, enddate, error):
+def main(takeoutzip, startdate, enddate, error, outputfile):
+    # unzip takeout file
     with ZipFile(takeoutzip, "r") as zip:
         zip.extractall()
 
+    # load location history json
     with open(takeoutzip.parent / RECORDS_PATH, "r") as f:
         lhist = json.loads(f.read())
 
+    # retain last location of the day
     day_locs = []
     parse_date = True
-    for i, loc in tqdm(enumerate(lhist["locations"])):
+    for i, loc in enumerate(lhist["locations"]):
         if parse_date:
             locdate = parse_ts(loc["timestamp"])
 
@@ -124,6 +137,7 @@ def main(takeoutzip, startdate, enddate, error):
                 locdate = nlocdate
                 parse_date = False
 
+    # filter out same location on subsequent days and add error
     errored_locs = []
     start = 0
     while True:
@@ -149,6 +163,7 @@ def main(takeoutzip, startdate, enddate, error):
         if i + 1 == len(day_locs):
             break
 
+    # save processed json
     with open("itin.json", "w") as f:
         f.write(json.dumps(errored_locs))
 
@@ -168,4 +183,4 @@ if __name__ == "__main__":
     if not args.ZIPFILE[0].is_file():
         exit(f"{args.ZIPFILE[0]} doesn't exist")
 
-    main(args.ZIPFILE[0], startdate, enddate, args.ERROR)
+    main(args.ZIPFILE[0], startdate, enddate, args.ERROR, args.OUTPUT)
