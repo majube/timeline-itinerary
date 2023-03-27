@@ -1,9 +1,17 @@
 import argparse, json
 from datetime import datetime
+from math import asin, cos, pi, sin, sqrt
 from pathlib import Path
+from random import random
 from zipfile import ZipFile
 
-RECORDS_PATH = "Takeout/Location History/Records.json"
+
+RECORDS_PATH = Path(
+    "Takeout/Location History/Records.json"
+)  # Subpath of timeline records in takeout zip
+RESOLUTION = 10  # radius within which end-of-day locations will be considered identical
+R = 6371  # mean radius of earth (km)
+DEFAULT_ERROR = 1  # km
 
 
 def init_argparse():
@@ -36,7 +44,7 @@ def init_argparse():
         "-e",
         "--error",
         action="store",
-        default=1,
+        default=DEFAULT_ERROR,
         dest="ERROR",
         required=False,
         type=float,
@@ -44,6 +52,38 @@ def init_argparse():
     )
 
     return parser
+
+
+def d(lat1, lon1, lat2, lon2):
+    """
+    Calculates distance (in km) between two points on sphere using haversine formula
+
+    Parameters:
+        lat1 (float): latitude of point 1 (in degrees)
+        lon1 (float): longitude of point 1 (in degrees)
+        lat2 (float): latitude of point 2 (in degrees)
+        lon2 (float): longitude of point 2 (in degrees)
+
+    Returns:
+        d (float): distance between points (in km)
+    """
+    lat1, lon1, lat2, lon2 = map(lambda c: c * pi / 180, (lat1, lon1, lat2, lon2))
+    return (
+        2
+        * R
+        * asin(
+            sqrt(
+                sin((lat2 - lat1) / 2) ** 2
+                + cos(lat1) * cos(lat2) * sin((lon2 - lon1) / 2) ** 2
+            )
+        )
+    )
+
+
+def add_error(lat, lon, error):
+    coordinate_error = (error * 180) / (pi * R)
+    angle = 2 * pi * random()
+    return lat + coordinate_error * sin(angle), lon + coordinate_error * cos(angle)
 
 
 def parse_ts(ts):
@@ -57,9 +97,9 @@ def main(takeoutzip, startdate, enddate, error):
     with open(takeoutzip.parent / RECORDS_PATH, "r") as f:
         lhist = json.loads(f.read())
 
-    filtered_locs = []
+    day_locs = []
     parse_date = True
-    for i, loc in enumerate(lhist["locations"]):
+    for i, loc in tqdm(enumerate(lhist["locations"])):
         if parse_date:
             locdate = parse_ts(loc["timestamp"])
 
@@ -74,20 +114,43 @@ def main(takeoutzip, startdate, enddate, error):
                 break
             else:
                 if nlocdate > locdate:
-                    filtered_locs.append(
+                    day_locs.append(
                         {
                             "date": locdate.strftime("%Y-%m-%d"),
-                            "lat": loc["latitudeE7"],
-                            "lon": loc["longitudeE7"],
+                            "lat": loc["latitudeE7"] / 1e7,
+                            "lon": loc["longitudeE7"] / 1e7,
                         }
                     )
                 locdate = nlocdate
                 parse_date = False
 
-    # TODO: add autocorrelated error to the co-ordinates of each day
+    errored_locs = []
+    start = 0
+    while True:
+        for i in range(start, len(day_locs)):
+            if (
+                d(
+                    day_locs[start]["lat"],
+                    day_locs[start]["lon"],
+                    day_locs[i]["lat"],
+                    day_locs[i]["lon"],
+                )
+                > RESOLUTION
+            ):
+                latE, lonE = add_error(
+                    day_locs[start]["lat"], day_locs[start]["lon"], error
+                )
+                errored_locs.append(
+                    {"date": day_locs[start]["date"], "lat": latE, "lon": lonE}
+                )
+                start = i
+                break
 
-    with open("filtered.json", "w") as f:
-        f.write(json.dumps(filtered_locs))
+        if i + 1 == len(day_locs):
+            break
+
+    with open("itin.json", "w") as f:
+        f.write(json.dumps(errored_locs))
 
 
 if __name__ == "__main__":
@@ -102,7 +165,7 @@ if __name__ == "__main__":
             f"Start date ({args.STARTDATE}) needs to be before end date ({args.ENDDATE})"
         )
 
-    if not (args.ZIPFILE[0].is_file()):
+    if not args.ZIPFILE[0].is_file():
         exit(f"{args.ZIPFILE[0]} doesn't exist")
 
     main(args.ZIPFILE[0], startdate, enddate, args.ERROR)
