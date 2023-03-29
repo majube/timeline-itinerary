@@ -91,6 +91,7 @@ def d(lat1, lon1, lat2, lon2):
 
 
 def add_error(lat, lon, error):
+    # flat plane approximation
     coordinate_error = (error * 180) / (pi * R)
     angle = 2 * pi * random()
     return lat + coordinate_error * sin(angle), lon + coordinate_error * cos(angle)
