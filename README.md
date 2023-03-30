@@ -14,7 +14,7 @@ This repository contains a Python script to process your Google location history
 git clone https://github.com/majube/timeline-itinerary
 ```
 
-3. Use the python script `preprocess.py, in the root folder of this directory, to unzip and process the location data. If you don't have [Python you'll have to install it.](https://www.python.org/downloads/) The script doesn't have any dependencies outside the standard library.
+3. Use the python script `preprocess.py`, in the root folder of this directory, to unzip and process the location data. If you don't have [Python you'll have to install it.](https://www.python.org/downloads/) The script doesn't have any dependencies outside the standard library.
 
 Usage:
 ```
