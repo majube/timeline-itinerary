@@ -22,6 +22,7 @@ RECORDS_PATH = Path(
 RESOLUTION = 10  # radius within which end-of-day locations will be considered identical
 R = 6371  # mean radius of earth (km)
 DEFAULT_ERROR = 1  # km
+DATA_FOLDER = Path("data")
 
 
 def init_argparse():
@@ -175,7 +176,7 @@ def main(takeoutzip, startdate, enddate, error, outputfile):
             break
 
     # save processed json
-    with open("itin.json", "w") as f:
+    with open(DATA_FOLDER / "itin.json", "w") as f:
         f.write(json.dumps(errored_locs))
 
 
