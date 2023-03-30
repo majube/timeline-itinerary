@@ -1,3 +1,13 @@
+"""
+Preprocesses Google Timeline takeout data by:
+    - Unzipping the takeout data
+    - Filtering out location outside of the given date interval
+    - Filtering out all but the last location for each day
+    - Filtering out days in which the last location was the same as that of the previous day
+    - Adding a random error to each location
+    - Saving the data to a JSON file
+"""
+
 import argparse, json
 from datetime import datetime
 from math import asin, cos, pi, sin, sqrt
