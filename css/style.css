@@ -1,0 +1,37 @@
+* {
+	box-sizing: border-box;
+}
+
+html, body {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	color: grey;
+}
+
+#container {
+	background: grey;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+}
+
+#top{
+	display: flex;
+	flex-direction: row;
+	background: grey;
+	justify-content: center;
+	align-items: center;
+}
+
+.slider-label{
+	color: black;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	width: 48px;
+}
+
+.slider-input{
+	width: 200px;
+}
