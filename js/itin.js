@@ -58,9 +58,9 @@ svg.selectAll(null)
     .enter()
     .append("path")
     .each(function(d){
-      d3.select(this).datum({type: 'Point', coordinates: [d.lon, d.lat]})
-    .attr("d", path.pointRadius(pinRadius))
-    .attr("fill", "red")
+        d3.select(this).datum({type: 'Point', coordinates: [d.lon, d.lat]})
+            .attr("d", path.pointRadius(pinRadius))
+            .attr("fill", "red")
     })
 
 //rotate
@@ -76,6 +76,18 @@ const t = d3.timer(function(elapsed) {
     path = d3.geoPath().projection(projection)
     svg.selectAll("path").attr("d", path.pointRadius(pinRadius))
 }, speed)
+
+//respond to drag
+svg.call(d3.drag().on("drag", (event) => {
+    const rotate = projection.rotate()
+    const k = sensitivity / projection.scale()
+    projection.rotate([
+      rotate[0] + event.dx * k,
+      rotate[1] - event.dy * k
+    ])
+    path = d3.geoPath().projection(projection)
+    svg.selectAll("path").attr("d", path.pointRadius(pinRadius))
+  }))
 
 //respond to scale slider change
 d3.select("#scaleSlider").on("change", function(d){
