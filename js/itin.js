@@ -90,7 +90,7 @@ svg.call(d3.drag().on("drag", (event) => {
   }))
 
 //respond to scale slider change
-d3.select("#scaleSlider").on("change", function(d){
+d3.select("#scaleSlider").on("change", function(){
     projection.scale(this.value)
     globe.attr("r", this.value)
 })
