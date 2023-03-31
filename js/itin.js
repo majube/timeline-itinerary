@@ -52,7 +52,7 @@ map.append("g")
     .style('stroke-width', 0.35)
 
 //plot points
-const pinRadius = 1.3
+const pinRadius = 1.7
 svg.selectAll(null)
     .data(itin)
     .enter()
