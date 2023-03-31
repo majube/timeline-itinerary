@@ -10,6 +10,7 @@ Preprocesses Google Timeline takeout data by:
 
 import argparse, json
 from datetime import datetime
+from itertools import pairwise
 from math import asin, cos, pi, sin, sqrt
 from pathlib import Path
 from random import random
@@ -123,41 +124,34 @@ def main(takeoutzip, startdate, enddate, error, outputfile):
 
     # retain last location of the day
     day_locs = []
-    parse_date = True
-    for i, loc in enumerate(lhist["locations"]):
-        if parse_date:
-            locdate = parse_ts(loc["timestamp"])
+    for cday, nday in pairwise(lhist["locations"]):
 
-        if locdate < startdate:
+        cdate, ndate = map(parse_ts, (cday, nday))
+        # before start of date range
+        if ndate < startdate:
             next
-        elif locdate > enddate:
+        # after start of date range
+        elif cdate > enddate:
             break
-        else:
-            try:
-                nlocdate = parse_ts(lhist["locations"][i + 1]["timestamp"])
-            except IndexError:
-                break
-            else:
-                if nlocdate > locdate:
-                    day_locs.append(
-                        {
-                            "date": locdate.strftime("%Y-%m-%d"),
-                            "lat": loc["latitudeE7"] / 1e7,
-                            "lon": loc["longitudeE7"] / 1e7,
-                        }
-                    )
-                locdate = nlocdate
-                parse_date = False
+        # in date range and cday last loc of day
+        elif ndate > cdate:
+            day_locs.append(
+                {
+                    "date": cdate.strftime("%Y-%m-%d"),
+                    "lat": cday["latitudeE7"] / 1e7,
+                    "lon": cday["longitudeE7"] / 1e7,
+                }
+            )
 
     # filter out same location on subsequent days and add error
     errored_locs = []
     start = 0
     while True:
+        startcoords = (day_locs[start]["lat"], day_locs[start]["lon"])
         for i in range(start, len(day_locs)):
             if (
                 d(
-                    day_locs[start]["lat"],
-                    day_locs[start]["lon"],
+                    *startcoords,
                     day_locs[i]["lat"],
                     day_locs[i]["lon"],
                 )
@@ -176,7 +170,7 @@ def main(takeoutzip, startdate, enddate, error, outputfile):
             break
 
     # save processed json
-    with open(DATA_FOLDER / "itin.json", "w") as f:
+    with open(DATA_FOLDER / Path(outputfile), "w") as f:
         f.write(json.dumps(errored_locs))
 
 
