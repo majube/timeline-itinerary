@@ -126,7 +126,7 @@ def main(takeoutzip, startdate, enddate, error, outputfile):
     day_locs = []
     for cday, nday in pairwise(lhist["locations"]):
 
-        cdate, ndate = map(parse_ts, (cday, nday))
+        cdate, ndate = map(parse_ts, (cday['timestamp'], nday['timestamp']))
         # before start of date range
         if ndate < startdate:
             next
